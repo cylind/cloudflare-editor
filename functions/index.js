@@ -195,26 +195,30 @@ router.all('*', (request, env, pagesContext) => {
 });
 
 
-// --- Worker 入口：增强日志和错误捕获 ---
+// --- Worker 入口：修改此部分以测试不同的 router.handle() 调用 ---
 export async function onRequest(context) {
   console.log(`[onRequest DEBUG] Received request for: ${context.request.method} ${new URL(context.request.url).pathname}`);
   const envKeys = context.env ? Object.keys(context.env).join(', ') : 'env is null/undefined';
   console.log(`[onRequest DEBUG] env keys available: ${envKeys}`);
 
+  let response;
   try {
-    console.log(`[onRequest DEBUG] Calling router.handle()...`);
-    const response = await router.handle(context.request, context.env, context);
+    // 我们将尝试只传递 request 和 env，这是 itty-router 非常常见的用法。
+    // 路由处理函数将能够通过第二个参数接收到 env。
+    console.log(`[onRequest DEBUG] Calling router.handle(context.request, context.env)`);
+    response = await router.handle(context.request, context.env); // <--- 主要变化在这里！
+
+    // 原来的调用是: response = await router.handle(context.request, context.env, context);
+    // 我们暂时移除了第三个参数 (Pages 的 context 对象) 的传递，看看是否有影响。
 
     if (response instanceof Response) {
       console.log(`[onRequest DEBUG] router.handle() returned a Response object with status: ${response.status}`);
       return response;
     } else {
-      // 这种情况理论上不应该发生，因为 itty-router 的处理函数应该总是返回 Response 或抛出错误
       console.error(`[onRequest DEBUG] CRITICAL_ERROR: router.handle() did NOT return a Response object. Returned:`, response);
       return new Response('Error: Main handler did not produce a valid Response object from router.', { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
   } catch (e) {
-    // 捕获 router.handle 或其解析过程中（包括异步路由处理器中未捕获的错误）直接抛出的异常
     console.error(`[onRequest DEBUG] CRITICAL_ERROR: Exception caught directly from router.handle() or its promise: Name: ${e.name}, Message: ${e.message}, Stack: ${e.stack}`);
     return new Response(`Unhandled exception in main function handler: ${e.name}: ${e.message}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   }

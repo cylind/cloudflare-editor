@@ -1,0 +1,20 @@
+{
+  "name": "cloudflare-editor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev ./functions/index.js --local-protocol http --port 8788 --site ./public",
+    "deploy:worker": "wrangler deploy ./functions/index.js",
+    "deploy:pages": "wrangler pages deploy ./public"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "wrangler": "^4.14.4"
+  },
+  "dependencies": {
+    "itty-router": "^5.0.18"
+  }
+}

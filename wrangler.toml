@@ -1,0 +1,20 @@
+name = "online-editor-worker" # Worker 的名称，可以自定义
+main = "functions/index.js" # Worker 入口文件
+compatibility_date = "2024-05-01" # 使用当前日期或更新的日期
+account_id = "b0aaa51fcd4e1e184ecf1f9368fb82fe" # 从 Cloudflare dashboard 获取
+
+# R2 Bucket Binding
+[[r2_buckets]]
+binding = "CONFIG_BUCKET" # 在Worker中通过 env.CONFIG_BUCKET 访问
+bucket_name = "editor-files" # 你创建的R2存储桶名称
+# preview_bucket_name = "your-unique-r2-bucket-name-preview" # 可选，用于预览环境
+
+# KV Namespace Binding (如果需要存储其他配置，此项目暂时不用KV)
+# [[kv_namespaces]]
+# binding = "MY_KV_NAMESPACE"
+# id = "your_kv_namespace_id"
+
+# Secrets (用于存储API TOKEN)
+# 需要手动通过wrangler secret put API_SECRET_TOKEN 来设置
+# [vars]
+# API_SECRET_TOKEN = "SET_VIA_WRANGLER_SECRET_PUT" # 只是占位符，实际值通过命令行设置

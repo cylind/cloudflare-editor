@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloudflare Online Editor</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs/loader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="connection-status">
+                <button id="connectButton">☁️ Connect to Cloud</button>
+            </div>
+            <h3>Cloud Files (R2)</h3>
+            <ul id="fileList">
+                </ul>
+        </div>
+        <div class="main-content">
+            <div class="toolbar">
+                <input type="text" id="fileNameInput" placeholder="current-file.yaml" disabled>
+                <button id="saveLocalButton">💾 Save As Local</button>
+                <button id="saveCloudButton" disabled>☁️ Save to Cloud</button>
+                <button id="renameCloudButton" disabled>✏️ Rename Cloud File</button>
+                <button id="deleteCloudButton" disabled>🗑️ Delete Cloud File</button>
+            </div>
+            <div id="editorContainer" style="width:100%;height:calc(100vh - 100px);"></div>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Enter API Token</h2>
+            <input type="password" id="apiTokenInput" placeholder="API Token">
+            <button id="submitTokenButton">Connect</button>
+            <p id="modalError" class="error-message"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

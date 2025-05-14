@@ -1,0 +1,181 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+.container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    padding: 15px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    margin-top: 20px;
+    border-bottom: 1px solid #34495e;
+    padding-bottom: 10px;
+}
+
+#fileList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#fileList li {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #34495e;
+    font-size: 0.9em;
+}
+
+#fileList li:hover {
+    background-color: #34495e;
+}
+
+#fileList li.selected {
+    background-color: #1abc9c;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.connection-status button {
+    width: 100%;
+    padding: 10px;
+    background-color: #7f8c8d; /* Grey */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.connection-status button.connected {
+    background-color: #2ecc71; /* Green */
+}
+
+.connection-status button.error {
+    background-color: #e74c3c; /* Red */
+}
+
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+
+.toolbar {
+    padding: 10px;
+    background-color: #ecf0f1;
+    border-bottom: 1px solid #bdc3c7;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toolbar input[type="text"] {
+    padding: 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    flex-grow: 1;
+}
+
+.toolbar button {
+    padding: 8px 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.toolbar button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+#editorContainer {
+    flex-grow: 1;
+    border: 1px solid #ddd;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal input[type="password"] {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal button {
+    background-color: #3498db;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.modal button:hover {
+    background-color: #2980b9;
+}
+
+.error-message {
+    color: #e74c3c;
+    font-size: 0.9em;
+    margin-top: 5px;
+}

@@ -73,9 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    closeModalButton.addEventListener('click', ()_blank => {
-        passwordModal.style.display = 'none';
-    });
+    closeModalButton.addEventListener('click', () => { // <--- 修正后的代码
+    passwordModal.style.display = 'none';
+});
 
     window.addEventListener('click', (event) => {
         if (event.target === passwordModal) {

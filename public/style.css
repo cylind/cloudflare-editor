@@ -78,6 +78,7 @@ body {
     display: flex;
     flex-direction: column;
     background-color: #fff;
+    border: 1px solid red; /* 可疑测试 */
 }
 
 .toolbar {

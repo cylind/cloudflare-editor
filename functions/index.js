@@ -22,22 +22,45 @@ const authenticatePathToken = (request, env) => {
 // (这里应该是您所有的 GET /api/files, PUT /api/files/:fileName+, POST /api/files/rename 等路由定义)
 // 请确保从之前的“完整代码”版本中复制所有这些路由到这里
 
-// GET /api/files - 列出 R2 存储桶中的文件
-router.get('/api/files', authenticateApi, async (request, env) => {
-    console.log('[API /api/files] Handler invoked.'); // 添加日志
-    try {
-        const listed = await env.CONFIG_BUCKET.list();
-        const files = listed.objects.map(obj => ({
-            key: obj.key,
-            size: obj.size,
-            uploaded: obj.uploaded,
-        }));
-        return json(files);
-    } catch (e) {
-        console.error("[API /api/files] R2 List Error:", e.message, e.stack);
-        return error(500, `Failed to list files: ${e.message}`);
-    }
+// 在 functions/index.js 中的 router 定义部分
+// ...
+router.get('/api/files', async (request, env) => {
+  console.log('[API /api/files V4 EXTREME_TEST] Handler invoked. No auth, no R2.');
+
+  const mockFiles = [
+    { key: "test-file-1.json", size: 123, uploaded: new Date().toISOString() },
+    { key: "another-config.yaml", size: 456, uploaded: new Date().toISOString() }
+  ];
+
+  // 直接使用 itty-router 的 json 辅助函数返回 JSON 响应
+  // 这个函数会设置正确的 Content-Type: application/json
+  try {
+    console.log('[API /api/files V4 EXTREME_TEST] Attempting to return mock JSON.');
+    return json(mockFiles); 
+  } catch (e) {
+    console.error('[API /api/files V4 EXTREME_TEST] Error trying to return mock JSON:', e.message);
+    // 如果连 json() 都失败了，返回一个纯文本错误
+    return new Response("Error creating mock JSON response: " + e.message, { status: 500 });
+  }
 });
+// ... 其他路由
+
+// // GET /api/files - 列出 R2 存储桶中的文件
+// router.get('/api/files', authenticateApi, async (request, env) => {
+//     console.log('[API /api/files] Handler invoked.'); // 添加日志
+//     try {
+//         const listed = await env.CONFIG_BUCKET.list();
+//         const files = listed.objects.map(obj => ({
+//             key: obj.key,
+//             size: obj.size,
+//             uploaded: obj.uploaded,
+//         }));
+//         return json(files);
+//     } catch (e) {
+//         console.error("[API /api/files] R2 List Error:", e.message, e.stack);
+//         return error(500, `Failed to list files: ${e.message}`);
+//     }
+// });
 
 // GET /api/files/:fileName+ - 从 R2 获取特定文件内容
 router.get('/api/files/:fileName+', authenticateApi, withParams, async (request, env) => {

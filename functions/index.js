@@ -1,234 +1,72 @@
-import { Router, error, json, text, withParams } from 'itty-router';
+// functions/index.js
+import { Router, json as ittyJsonRenamed, error as ittyErrorRenamed } from 'itty-router'; // 重命名导入以防冲突
 
-// 创建一个新的 Router 实例
 const router = Router();
 
-// --- 中间件 (与您之前的版本完全相同) ---
-const authenticateApi = (request, env) => {
-    const token = request.headers.get('X-API-TOKEN');
-    if (!token || token !== env.API_SECRET_TOKEN) {
-        return error(401, 'Unauthorized: Missing or invalid API Token in X-API-TOKEN header.');
-    }
-};
-
-const authenticatePathToken = (request, env) => {
-    const { apiTokenFromPath } = request.params;
-    if (!apiTokenFromPath || apiTokenFromPath !== env.API_SECRET_TOKEN) {
-        return error(401, 'Unauthorized: Invalid or missing token in URL path.');
-    }
-};
-
-// --- API 路由 (与您之前的版本完全相同) ---
-// (这里应该是您所有的 GET /api/files, PUT /api/files/:fileName+, POST /api/files/rename 等路由定义)
-// 请确保从之前的“完整代码”版本中复制所有这些路由到这里
-
-// 在 functions/index.js 中的 router 定义部分
-// ...
+// 极简化的 /api/files 路由，用于最终测试
 router.get('/api/files', async (request, env) => {
-  console.log('[API /api/files V4 EXTREME_TEST] Handler invoked. No auth, no R2.');
-
-  const mockFiles = [
-    { key: "test-file-1.json", size: 123, uploaded: new Date().toISOString() },
-    { key: "another-config.yaml", size: 456, uploaded: new Date().toISOString() }
-  ];
-
-  // 直接使用 itty-router 的 json 辅助函数返回 JSON 响应
-  // 这个函数会设置正确的 Content-Type: application/json
+  const requestUrl = new URL(request.url);
+  console.log(`[API /api/files SUPER_DEBUG] Handler for "${requestUrl.pathname}" invoked.`);
+  const simpleJSONResponse = { 
+    message: "SUPER_DEBUG: Test JSON response from /api/files", 
+    timestamp: new Date().toISOString(),
+    env_keys: env ? Object.keys(env).join(', ') : "env is missing" // 检查env是否真的传递进来了
+  };
   try {
-    console.log('[API /api/files V4 EXTREME_TEST] Attempting to return mock JSON.');
-    return json(mockFiles); 
+    console.log('[API /api/files SUPER_DEBUG] Attempting to return JSON response.');
+    return ittyJsonRenamed(simpleJSONResponse);
   } catch (e) {
-    console.error('[API /api/files V4 EXTREME_TEST] Error trying to return mock JSON:', e.message);
-    // 如果连 json() 都失败了，返回一个纯文本错误
-    return new Response("Error creating mock JSON response: " + e.message, { status: 500 });
+    const errorMsg = `[API /api/files SUPER_DEBUG] Error creating JSON: ${e.message}`;
+    console.error(errorMsg, e.stack);
+    return new Response(JSON.stringify({ error: errorMsg }), { 
+      status: 500, 
+      headers: { 'Content-Type': 'application/json; charset=utf-8' }
+    });
   }
 });
-// ... 其他路由
 
-// // GET /api/files - 列出 R2 存储桶中的文件
-// router.get('/api/files', authenticateApi, async (request, env) => {
-//     console.log('[API /api/files] Handler invoked.'); // 添加日志
-//     try {
-//         const listed = await env.CONFIG_BUCKET.list();
-//         const files = listed.objects.map(obj => ({
-//             key: obj.key,
-//             size: obj.size,
-//             uploaded: obj.uploaded,
-//         }));
-//         return json(files);
-//     } catch (e) {
-//         console.error("[API /api/files] R2 List Error:", e.message, e.stack);
-//         return error(500, `Failed to list files: ${e.message}`);
-//     }
-// });
-
-// GET /api/files/:fileName+ - 从 R2 获取特定文件内容
-router.get('/api/files/:fileName+', authenticateApi, withParams, async (request, env) => {
-    const { fileName } = request.params;
-    console.log(`[API /api/files/:fileName+] Handler invoked for: ${fileName}`); // 添加日志
-    if (!fileName) {
-        return error(400, 'File name is required.');
-    }
-    try {
-        const object = await env.CONFIG_BUCKET.get(decodeURIComponent(fileName));
-        if (object === null) {
-            return error(404, `File not found: ${decodeURIComponent(fileName)}`);
-        }
-        const headers = new Headers();
-        if (object.httpMetadata?.contentType) {
-            headers.set('Content-Type', object.httpMetadata.contentType);
-        } else {
-            headers.set('Content-Type', 'application/octet-stream');
-        }
-        if (object.httpEtag) {
-            headers.set('ETag', object.httpEtag);
-        }
-        return new Response(object.body, { headers: headers });
-    } catch (e) {
-        console.error(`[API /api/files/:fileName+] R2 Get Error for ${fileName}:`, e.message, e.stack);
-        return error(500, `Failed to retrieve file: ${e.message}`);
-    }
+// 简化其他路由用于减少干扰，或者暂时注释掉它们
+router.get('/:token/:filename+', async (request, env) => {
+    console.log(`[Direct Download SUPER_DEBUG] Route invoked for token: ${request.params.token}, file: ${request.params.filename}`);
+    return new Response(`SUPER_DEBUG: Direct download route. Token: ${request.params.token}, File: ${request.params.filename}`, {status: 200, headers: {'Content-Type': 'text/plain'}});
 });
 
-// PUT /api/files/:fileName+
-router.put('/api/files/:fileName+', authenticateApi, withParams, async (request, env) => {
-    const { fileName } = request.params;
-    console.log(`[API PUT /api/files/:fileName+] Handler invoked for: ${fileName}`);
-    // ... (从之前完整代码复制其余的 PUT 逻辑, 包括 try/catch 和 console.error)
-    if (!fileName) {
-        return error(400, 'File name is required for PUT operation.');
-    }
-    try {
-        const contentLength = request.headers.get('content-length');
-        if (contentLength === '0' && !request.body) {
-             await env.CONFIG_BUCKET.put(decodeURIComponent(fileName), new Uint8Array(), {
-                httpMetadata: { contentType: request.headers.get('Content-Type') || 'application/octet-stream' },
-            });
-        } else if (!request.body) {
-            return error(400, 'Request body is missing for PUT operation.');
-        } else {
-            await env.CONFIG_BUCKET.put(decodeURIComponent(fileName), request.body, {
-                httpMetadata: { contentType: request.headers.get('Content-Type') || 'application/octet-stream' },
-            });
-        }
-        return text(`File ${decodeURIComponent(fileName)} uploaded successfully.`);
-    } catch (e) {
-        console.error(`[API PUT /api/files/:fileName+] R2 Put Error for ${fileName}:`, e.message, e.stack);
-        return error(500, `Failed to upload file: ${e.message}`);
-    }
+// Catch-all
+router.all('*', (request) => {
+  const requestUrl = new URL(request.url);
+  console.log(`[Catch-all SUPER_DEBUG] Route hit for: ${requestUrl.pathname}`);
+  const notFoundResponse = { error: "SUPER_DEBUG: Route not found by itty-router", status: 404, requestedUrl: requestUrl.href };
+  return new Response(JSON.stringify(notFoundResponse), { 
+    status: 404, 
+    headers: { 'Content-Type': 'application/json; charset=utf-8' } 
+  });
 });
 
-// DELETE /api/files/:fileName+
-router.delete('/api/files/:fileName+', authenticateApi, withParams, async (request, env) => {
-    const { fileName } = request.params;
-    console.log(`[API DELETE /api/files/:fileName+] Handler invoked for: ${fileName}`);
-    // ... (从之前完整代码复制其余的 DELETE 逻辑, 包括 try/catch 和 console.error)
-    if (!fileName) {
-        return error(400, 'File name is required for DELETE operation.');
-    }
-    try {
-        await env.CONFIG_BUCKET.delete(decodeURIComponent(fileName));
-        return text(`File ${decodeURIComponent(fileName)} deleted successfully.`);
-    } catch (e) {
-        console.error(`[API DELETE /api/files/:fileName+] R2 Delete Error for ${fileName}:`, e.message, e.stack);
-        return error(500, `Failed to delete file: ${e.message}`);
-    }
-});
-
-// POST /api/files/rename
-router.post('/api/files/rename', authenticateApi, async (request, env) => {
-    console.log(`[API POST /api/files/rename] Handler invoked.`);
-    // ... (从之前完整代码复制其余的 POST /rename 逻辑, 包括 try/catch 和 console.error)
-    let payload;
-    try {
-        payload = await request.json();
-    } catch (e) {
-        return error(400, "Invalid JSON payload for rename operation. Expected { \"oldKey\": \"...\", \"newKey\": \"...\" }");
-    }
-    const { oldKey, newKey } = payload;
-    if (!oldKey || !newKey) {
-        return error(400, 'Both oldKey and newKey are required in the JSON payload for rename.');
-    }
-    if (oldKey === newKey) {
-        return text('Old key and new key are the same. No action taken.');
-    }
-    try {
-        const object = await env.CONFIG_BUCKET.get(oldKey);
-        if (object === null) {
-            return error(404, `Source file not found for rename: ${oldKey}`);
-        }
-        await env.CONFIG_BUCKET.put(newKey, object.body, {
-             httpMetadata: object.httpMetadata,
-             customMetadata: object.customMetadata
-        });
-        await env.CONFIG_BUCKET.delete(oldKey);
-        return text(`File renamed from ${oldKey} to ${newKey} successfully.`);
-    } catch (e) {
-        console.error(`[API POST /api/files/rename] R2 Rename Error (from ${oldKey} to ${newKey}):`, e.message, e.stack);
-        return error(500, `Failed to rename file: ${e.message}`);
-    }
-});
-
-
-// --- 直接下载路由 (与您之前的版本完全相同) ---
-router.get('/:apiTokenFromPath/:fileNameForDirectDownload+', authenticatePathToken, withParams, async (request, env) => {
-    const { apiTokenFromPath, fileNameForDirectDownload } = request.params;
-    console.log(`[Direct Download] Handler invoked for token: ${apiTokenFromPath}, file: ${fileNameForDirectDownload}`);
-    // ... (从之前完整代码复制其余的直接下载逻辑, 包括 try/catch 和 console.error)
-    if (!fileNameForDirectDownload) {
-        return error(400, 'File name is required for direct download.');
-    }
-    try {
-        const object = await env.CONFIG_BUCKET.get(decodeURIComponent(fileNameForDirectDownload));
-        if (object === null) {
-            return error(404, `File not found for direct download: ${decodeURIComponent(fileNameForDirectDownload)}`);
-        }
-        const headers = new Headers();
-        headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
-        const actualFileName = decodeURIComponent(fileNameForDirectDownload).split('/').pop();
-        headers.set('Content-Disposition', `attachment; filename="${actualFileName}"`);
-        if (object.httpEtag) {
-            headers.set('ETag', object.httpEtag);
-        }
-        if (object.cacheControl) {
-            headers.set('Cache-Control', object.cacheControl);
-        }
-        return new Response(object.body, { headers: headers });
-    } catch (e) {
-        console.error(`[Direct Download] R2 Direct Download Error for ${fileNameForDirectDownload}:`, e.message, e.stack);
-        return error(500, `Failed to retrieve file for download: ${e.message}`);
-    }
-});
-
-
-// --- Catch-all / 404 (确保这是最后一个路由) ---
-router.all('*', (request, env, pagesContext) => {
-  console.log(`[itty-router] Catch-all * route hit for: ${request.method} ${request.url}`);
-  return error(404, `Route not found by itty-router. Original URL: ${request.url}`);
-});
-
-
-// --- Main onRequest Handler ---
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  console.log(`[onRequest V4 DEBUG] Received request for: ${context.request.method} ${url.pathname}`);
-  const envKeys = context.env ? Object.keys(context.env).join(', ') : 'env is null/undefined';
-  console.log(`[onRequest V4 DEBUG] env keys available: ${envKeys}`);
-
-  let response;
+  console.log(`[onRequest SUPER_DEBUG] Request for: ${context.request.method} ${url.pathname}`);
   try {
-    console.log(`[onRequest V4 DEBUG] Calling router.handle(context.request, context.env)`);
-    response = await router.handle(context.request, context.env); // 传递 request 和 env
-
-    if (response instanceof Response) {
-      console.log(`[onRequest V4 DEBUG] router.handle() returned a Response object for "${url.pathname}" with status: ${response.status}`);
-      return response;
+    // 确保 context.env 真的存在并传递给了 router.handle
+    if (!context.env) {
+        console.error("[onRequest SUPER_DEBUG] CRITICAL: context.env is undefined or null!");
+        // 即使env有问题，也尝试让router处理，看它如何反应
     } else {
-      console.error(`[onRequest V4 DEBUG] CRITICAL_ERROR: router.handle() did NOT return a Response object for "${url.pathname}". Returned:`, response);
-      return new Response(`Error: Main handler did not produce a valid Response object from router (v4 test) for path "${url.pathname}".`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+        const envKeys = Object.keys(context.env).join(', ');
+        console.log(`[onRequest SUPER_DEBUG] context.env keys: ${envKeys}`);
     }
+
+    const response = await router.handle(context.request, context.env); // 保持这个调用方式
+
+    if (!response || !(response instanceof Response)) {
+        const errorMsg = "[onRequest SUPER_DEBUG] CRITICAL: router.handle returned invalid or no response!";
+        console.error(errorMsg, response);
+        return new Response(JSON.stringify({error: errorMsg, originalResponse: String(response)}), {status: 500, headers: {'Content-Type': 'application/json'}});
+    }
+    console.log(`[onRequest SUPER_DEBUG] router.handle successful for ${url.pathname}, status: ${response.status}`);
+    return response;
   } catch (e) {
-    console.error(`[onRequest V4 DEBUG] CRITICAL_ERROR: Exception caught from router.handle() for path "${url.pathname}": Name: ${e.name}, Message: ${e.message}, Stack: ${e.stack}`);
-    return new Response(`Unhandled exception in main function handler (v4 test) for path "${url.pathname}": ${e.name}: ${e.message}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    const errorMsg = `[onRequest SUPER_DEBUG] CRITICAL: Exception from router.handle for ${url.pathname}: ${e.name} - ${e.message}`;
+    console.error(errorMsg, e.stack);
+    return new Response(JSON.stringify({error: errorMsg, stack: e.stack}), {status: 500, headers: {'Content-Type': 'application/json'}});
   }
 }

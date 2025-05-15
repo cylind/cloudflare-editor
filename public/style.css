@@ -7,10 +7,12 @@ body {
     color: #333;
 }
 
+/* 假设 .container 是主 flex 容器 */
 .container {
     display: flex;
     width: 100%;
-    height: 100%;
+    height: 100vh; /* 占满整个视窗高度 */
+    overflow: hidden; /* 防止子元素溢出导致滚动条或尺寸问题 */
 }
 
 .sidebar {
@@ -22,6 +24,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    flex-shrink: 0; /* 防止侧边栏被挤压 */
 }
 
 .sidebar h3 {
@@ -74,11 +77,12 @@ body {
 
 
 .main-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: #fff;
-    border: 1px solid red; /* 可疑测试 */
+    flex-grow: 1; /* 让主内容区占据剩余空间 */
+    display: flex; /* 如果它内部还有 flex 布局 (如 toolbar 和 editorContainer) */
+    flex-direction: column; /* 假设 toolbar 在上，editorContainer 在下 */
+    overflow-x: auto; /* 或者 hidden，根据需要处理水平溢出 */
+    min-width: 0; /* 这一条有时对 flex 子元素避免被内容撑开很重要 */
+    border: 1px solid red; /* 保留这个用于调试 */
 }
 
 .toolbar {
@@ -111,9 +115,15 @@ body {
     cursor: not-allowed;
 }
 
-#editorContainer {
+/* #editorContainer {
     flex-grow: 1;
     border: 1px solid #ddd;
+} */
+
+#editorContainer {
+    flex-grow: 1; /* 如果 .main-content 是 flex column 布局，让编辑器占据剩余垂直空间 */
+    /* width: 100%; height: calc(100vh - 100px); */ /* 您已有的样式，可能需要调整 height 如果父级不是100vh */
+    overflow: hidden; /* Monaco 编辑器会自己处理内部滚动条 */
 }
 
 /* Modal Styles */

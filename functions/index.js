@@ -195,47 +195,27 @@ router.all('*', (request, env, pagesContext) => {
 });
 
 
-// functions/index.js
-// ... (所有顶层的 IMPORTS, const router = Router(); 实例化, 以及所有的 router.get(), router.post() 等路由定义保持不变)
-// ... (确保您之前添加的 router.get('/') 和 router.all('*',...) 调试路由也还在，尽管下面的if会优先处理'/')
-
-// --- Worker 入口：修改此部分以绕过 router.handle() 来处理根路径 ---
+// --- Main onRequest Handler ---
 export async function onRequest(context) {
   const url = new URL(context.request.url);
-  const pathname = url.pathname;
-
-  console.log(`[onRequest DEBUG] Received request for: ${context.request.method} ${pathname}`);
+  console.log(`[onRequest V4 DEBUG] Received request for: ${context.request.method} ${url.pathname}`);
   const envKeys = context.env ? Object.keys(context.env).join(', ') : 'env is null/undefined';
-  console.log(`[onRequest DEBUG] env keys available: ${envKeys}`);
+  console.log(`[onRequest V4 DEBUG] env keys available: ${envKeys}`);
 
-  // 如果请求的是根路径 '/'，则直接返回一个简单的响应，完全不调用 router.handle()
-  if (pathname === '/') {
-    console.log('[onRequest DEBUG] Path is /, returning direct response, BYPASSING router.handle().');
-    return new Response(
-      'Direct response for / path. router.handle() was NOT called for this request.',
-      {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-      }
-    );
-  }
-
-  // 对于所有其他路径，仍然尝试使用 router.handle()
-  // (我们继续使用最简化的 router.handle(context.request) 进行测试)
   let response;
   try {
-    console.log(`[onRequest DEBUG] Path is "${pathname}", calling router.handle(context.request)`);
-    response = await router.handle(context.request);
+    console.log(`[onRequest V4 DEBUG] Calling router.handle(context.request, context.env)`);
+    response = await router.handle(context.request, context.env); // 传递 request 和 env
 
     if (response instanceof Response) {
-      console.log(`[onRequest DEBUG] router.handle() returned a Response object for "${pathname}" with status: ${response.status}`);
+      console.log(`[onRequest V4 DEBUG] router.handle() returned a Response object for "${url.pathname}" with status: ${response.status}`);
       return response;
     } else {
-      console.error(`[onRequest DEBUG] CRITICAL_ERROR: router.handle() did NOT return a Response object for "${pathname}". Returned:`, response);
-      return new Response(`Error: Main handler did not produce a valid Response object from router for path "${pathname}".`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      console.error(`[onRequest V4 DEBUG] CRITICAL_ERROR: router.handle() did NOT return a Response object for "${url.pathname}". Returned:`, response);
+      return new Response(`Error: Main handler did not produce a valid Response object from router (v4 test) for path "${url.pathname}".`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
   } catch (e) {
-    console.error(`[onRequest DEBUG] CRITICAL_ERROR: Exception caught from router.handle() for path "${pathname}": Name: ${e.name}, Message: ${e.message}, Stack: ${e.stack}`);
-    return new Response(`Unhandled exception in main function handler for path "${pathname}": ${e.name}: ${e.message}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    console.error(`[onRequest V4 DEBUG] CRITICAL_ERROR: Exception caught from router.handle() for path "${url.pathname}": Name: ${e.name}, Message: ${e.message}, Stack: ${e.stack}`);
+    return new Response(`Unhandled exception in main function handler (v4 test) for path "${url.pathname}": ${e.name}: ${e.message}`, { status: 500, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   }
 }

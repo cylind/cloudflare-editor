@@ -195,21 +195,23 @@ router.all('*', (request, env, pagesContext) => {
 });
 
 
-// --- Worker 入口：修改此部分以测试不同的 router.handle() 调用 ---
+// functions/index.js
+// ... (所有顶层的 IMPORTS, const router = Router(); 实例化, 以及所有的 router.get(), router.post() 等路由定义保持不变)
+// ... (确保您之前添加的 router.get('/') 和 router.all('*',...) 调试路由也还在)
+// --- Worker 入口：再次修改此部分以测试最简化的 router.handle() 调用 ---
 export async function onRequest(context) {
   console.log(`[onRequest DEBUG] Received request for: ${context.request.method} ${new URL(context.request.url).pathname}`);
   const envKeys = context.env ? Object.keys(context.env).join(', ') : 'env is null/undefined';
-  console.log(`[onRequest DEBUG] env keys available: ${envKeys}`);
+  console.log(`[onRequest DEBUG] env keys available: ${envKeys}`); // 我们知道 env 是正确填充的
 
   let response;
   try {
-    // 我们将尝试只传递 request 和 env，这是 itty-router 非常常见的用法。
-    // 路由处理函数将能够通过第二个参数接收到 env。
-    console.log(`[onRequest DEBUG] Calling router.handle(context.request, context.env)`);
-    response = await router.handle(context.request, context.env); // <--- 主要变化在这里！
-
-    // 原来的调用是: response = await router.handle(context.request, context.env, context);
-    // 我们暂时移除了第三个参数 (Pages 的 context 对象) 的传递，看看是否有影响。
+    // 测试：最简化的调用 - 只传递 request 对象。
+    // 路由处理函数 (例如我们为 GET / 或 * 定义的简单处理函数) 将会以 (request) 的形式被调用。
+    // 任何期望 (request, env) 签名的处理函数将会收到 (request, undefined) 从而可能出错，
+    // 但我们的目标是看 itty-router 的核心分发是否工作。
+    console.log(`[onRequest DEBUG] Calling router.handle(context.request)`);
+    response = await router.handle(context.request); // <--- 主要变化在这里！
 
     if (response instanceof Response) {
       console.log(`[onRequest DEBUG] router.handle() returned a Response object with status: ${response.status}`);

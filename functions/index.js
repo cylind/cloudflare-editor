@@ -178,16 +178,6 @@ router.get('/:apiTokenFromPath/:fileNameForDirectDownload+', authenticatePathTok
 });
 
 
-// --- 新增：明确的根路径 '/' 路由，用于测试 ---
-router.get('/', (request, env, pagesContext) => {
-  console.log('[itty-router] Explicit GET / route hit.');
-  // 此处理函数通常只在 Cloudflare Pages 将根路径 '/' 路由到此 Function 时才会被调用。
-  // 正常情况下，如果 `public/index.html` 存在，Pages 会优先提供静态文件。
-  return new Response('Hello from itty-router GET / route! If you see this, Pages routed / to the Function.', {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
-  });
-});
-
 // --- Catch-all / 404 (确保这是最后一个路由) ---
 router.all('*', (request, env, pagesContext) => {
   console.log(`[itty-router] Catch-all * route hit for: ${request.method} ${request.url}`);

@@ -1,72 +1,88 @@
-// functions/index.js
-import { Router, json as ittyJsonRenamed, error as ittyErrorRenamed } from 'itty-router'; // 重命名导入以防冲突
-
-const router = Router();
-
-// 极简化的 /api/files 路由，用于最终测试
-router.get('/api/files', async (request, env) => {
-  const requestUrl = new URL(request.url);
-  console.log(`[API /api/files SUPER_DEBUG] Handler for "${requestUrl.pathname}" invoked.`);
-  const simpleJSONResponse = { 
-    message: "SUPER_DEBUG: Test JSON response from /api/files", 
-    timestamp: new Date().toISOString(),
-    env_keys: env ? Object.keys(env).join(', ') : "env is missing" // 检查env是否真的传递进来了
-  };
-  try {
-    console.log('[API /api/files SUPER_DEBUG] Attempting to return JSON response.');
-    return ittyJsonRenamed(simpleJSONResponse);
-  } catch (e) {
-    const errorMsg = `[API /api/files SUPER_DEBUG] Error creating JSON: ${e.message}`;
-    console.error(errorMsg, e.stack);
-    return new Response(JSON.stringify({ error: errorMsg }), { 
-      status: 500, 
-      headers: { 'Content-Type': 'application/json; charset=utf-8' }
-    });
-  }
-});
-
-// 简化其他路由用于减少干扰，或者暂时注释掉它们
-router.get('/:token/:filename+', async (request, env) => {
-    console.log(`[Direct Download SUPER_DEBUG] Route invoked for token: ${request.params.token}, file: ${request.params.filename}`);
-    return new Response(`SUPER_DEBUG: Direct download route. Token: ${request.params.token}, File: ${request.params.filename}`, {status: 200, headers: {'Content-Type': 'text/plain'}});
-});
-
-// Catch-all
-router.all('*', (request) => {
-  const requestUrl = new URL(request.url);
-  console.log(`[Catch-all SUPER_DEBUG] Route hit for: ${requestUrl.pathname}`);
-  const notFoundResponse = { error: "SUPER_DEBUG: Route not found by itty-router", status: 404, requestedUrl: requestUrl.href };
-  return new Response(JSON.stringify(notFoundResponse), { 
-    status: 404, 
-    headers: { 'Content-Type': 'application/json; charset=utf-8' } 
-  });
-});
+// functions/index.js (绝对最小化测试，无外部路由依赖)
 
 export async function onRequest(context) {
-  const url = new URL(context.request.url);
-  console.log(`[onRequest SUPER_DEBUG] Request for: ${context.request.method} ${url.pathname}`);
-  try {
-    // 确保 context.env 真的存在并传递给了 router.handle
-    if (!context.env) {
-        console.error("[onRequest SUPER_DEBUG] CRITICAL: context.env is undefined or null!");
-        // 即使env有问题，也尝试让router处理，看它如何反应
-    } else {
-        const envKeys = Object.keys(context.env).join(', ');
-        console.log(`[onRequest SUPER_DEBUG] context.env keys: ${envKeys}`);
-    }
+  const request = context.request;
+  const env = context.env;
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  const method = request.method;
 
-    const response = await router.handle(context.request, context.env); // 保持这个调用方式
-
-    if (!response || !(response instanceof Response)) {
-        const errorMsg = "[onRequest SUPER_DEBUG] CRITICAL: router.handle returned invalid or no response!";
-        console.error(errorMsg, response);
-        return new Response(JSON.stringify({error: errorMsg, originalResponse: String(response)}), {status: 500, headers: {'Content-Type': 'application/json'}});
-    }
-    console.log(`[onRequest SUPER_DEBUG] router.handle successful for ${url.pathname}, status: ${response.status}`);
-    return response;
-  } catch (e) {
-    const errorMsg = `[onRequest SUPER_DEBUG] CRITICAL: Exception from router.handle for ${url.pathname}: ${e.name} - ${e.message}`;
-    console.error(errorMsg, e.stack);
-    return new Response(JSON.stringify({error: errorMsg, stack: e.stack}), {status: 500, headers: {'Content-Type': 'application/json'}});
+  // 尝试记录每个进入此函数的请求
+  console.log(`[ULTRA_MIN_TEST] Request: ${method} ${pathname}`);
+  if (env && Object.keys(env).length > 0) {
+    console.log(`[ULTRA_MIN_TEST] Env keys: ${Object.keys(env).join(', ')}`);
+  } else {
+    console.log("[ULTRA_MIN_TEST] Env object is empty or not present.");
   }
+
+
+  // 手动处理 /api/files 路由
+  if (pathname === '/api/files' && method === 'GET') {
+    console.log('[ULTRA_MIN_TEST] Matched GET /api/files by manual routing.');
+    
+    // 模拟API Token认证 (非常简化)
+    const apiTokenHeader = request.headers.get('X-API-TOKEN');
+    if (!env.API_SECRET_TOKEN) {
+        console.error('[ULTRA_MIN_TEST] API_SECRET_TOKEN is NOT DEFINED in env!');
+        return new Response(JSON.stringify({ error: "Server configuration error: API secret not set." }), { 
+            status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } 
+        });
+    }
+    if (apiTokenHeader !== env.API_SECRET_TOKEN) {
+      console.log('[ULTRA_MIN_TEST] Auth failed for /api/files. Token received:', apiTokenHeader);
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid or missing API Token." }), { 
+        status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } 
+      });
+    }
+    console.log('[ULTRA_MIN_TEST] Auth success for /api/files.');
+
+    // 模拟R2列表操作 (不实际调用R2，只返回mock数据)
+    try {
+      console.log('[ULTRA_MIN_TEST] Simulating R2 list operation for /api/files.');
+      const mockFiles = [
+        { key: "mock-file1.yaml", size: 123, uploaded: new Date().toISOString() },
+        { key: "mock-file2.json", size: 456, uploaded: new Date().toISOString() }
+      ];
+      console.log('[ULTRA_MIN_TEST] Returning mock file list for /api/files.');
+      return new Response(JSON.stringify(mockFiles), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' }
+      });
+    } catch (e) {
+      console.error('[ULTRA_MIN_TEST] Error during mock R2 simulation:', e.message, e.stack);
+      return new Response(JSON.stringify({ error: "Internal server error during mock R2 operation." }), { 
+        status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } 
+      });
+    }
+  }
+
+  // （可选）手动处理直接下载链接的简化版 (如果需要测试)
+  // 例如: /TOKEN/filename.txt (非常简化的匹配)
+  const pathParts = pathname.slice(1).split('/');
+  if (pathParts.length >= 2 && method === 'GET' && pathParts[0] !== 'api') { // 假设token后面直接是文件名
+    const tokenFromPath = pathParts[0];
+    const fileNameFromPath = pathParts.slice(1).join('/'); // 支持文件名中包含'/'的情况
+    console.log(`[ULTRA_MIN_TEST] Matched potential direct download: Token=${tokenFromPath}, File=${fileNameFromPath}`);
+    if (tokenFromPath !== env.API_SECRET_TOKEN) {
+         console.log('[ULTRA_MIN_TEST] Auth failed for direct download.');
+        return new Response(JSON.stringify({ error: "Unauthorized: Invalid token for direct download." }), { 
+            status: 401, headers: { 'Content-Type': 'application/json; charset=utf-8' } 
+        });
+    }
+    return new Response(`ULTRA_MIN_TEST: Mock download for file: ${fileNameFromPath}`, {
+      status: 200,
+      headers: { 
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${fileNameFromPath}"`
+      }
+    });
+  }
+
+
+  // 对于所有其他未被上面手动处理的、但仍然被 _routes.json 路由到此函数的请求
+  console.log(`[ULTRA_MIN_TEST] Path "${pathname}" (method ${method}) not explicitly handled. Returning 404.`);
+  return new Response(JSON.stringify({ error: `ULTRA_MIN_TEST: Path not found: ${method} ${pathname}` }), {
+    status: 404,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  });
 }
